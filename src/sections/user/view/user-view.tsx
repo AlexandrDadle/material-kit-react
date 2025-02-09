@@ -1,38 +1,62 @@
-import { useState, useCallback } from 'react';
-
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Table from '@mui/material/Table';
-import Button from '@mui/material/Button';
-import TableBody from '@mui/material/TableBody';
-import Typography from '@mui/material/Typography';
-import TableContainer from '@mui/material/TableContainer';
-import TablePagination from '@mui/material/TablePagination';
-
-import { _users } from 'src/_mock';
+import React, { useState, useCallback, useEffect } from 'react';
+import { getData } from 'src/utils/services/axiosService';
+import { Box, Button, Card, Table, TableBody, TableCell, TableContainer, TablePagination, TableRow, Typography } from '@mui/material';
 import { DashboardContent } from 'src/layouts/dashboard';
-
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
-
+import CreateUserModal from 'src/components/CreateUserModal';
 import { TableNoData } from '../table-no-data';
 import { UserTableRow } from '../user-table-row';
 import { UserTableHead } from '../user-table-head';
 import { TableEmptyRows } from '../table-empty-rows';
 import { UserTableToolbar } from '../user-table-toolbar';
 import { emptyRows, applyFilter, getComparator } from '../utils';
-
 import type { UserProps } from '../user-table-row';
 
 // ----------------------------------------------------------------------
 
-export function UserView() {
-  const table = useTable();
+const UserView: React.FC = () => {
+  console.log('UserView component rendered'); // Debug log
 
+  const table = useTable();
   const [filterName, setFilterName] = useState('');
+  const [users, setUsers] = useState<UserProps[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleCreateUser = (userData: { firstName: string; lastName: string; middleName: string; email: string; phoneNumber: string; userRole: string }) => {
+    console.log('User created:', userData);
+    // Add logic to create user
+  };
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      console.log('Fetching users...'); // Debug log
+      try {
+        const data = await getData<UserProps[]>('/account/account');
+        setUsers(data);
+      } catch (err) {
+        setError('Failed to fetch users');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+    console.log('useEffect called'); // Debug log
+  }, []); // Ensure the dependency array is empty
 
   const dataFiltered: UserProps[] = applyFilter({
-    inputData: _users,
+    inputData: users,
     comparator: getComparator(table.order, table.orderBy),
     filterName,
   });
@@ -49,6 +73,7 @@ export function UserView() {
           variant="contained"
           color="inherit"
           startIcon={<Iconify icon="mingcute:add-line" />}
+          onClick={handleOpenModal}
         >
           New user
         </Button>
@@ -70,42 +95,60 @@ export function UserView() {
               <UserTableHead
                 order={table.order}
                 orderBy={table.orderBy}
-                rowCount={_users.length}
+                rowCount={users.length}
                 numSelected={table.selected.length}
                 onSort={table.onSort}
                 onSelectAllRows={(checked) =>
                   table.onSelectAllRows(
                     checked,
-                    _users.map((user) => user.id)
+                    users.map((user) => user.id)
                   )
                 }
                 headLabel={[
-                  { id: 'name', label: 'Name' },
-                  { id: 'company', label: 'Company' },
+                  { id: 'first_name', label: 'First Name' },
+                  { id: 'last_name', label: 'Last Name' },
+                  { id: 'middle_name', label: 'Middle Name' },
+                  { id: 'email', label: 'Email' },
+                  { id: 'phone_number', label: 'Phone' },
                   { id: 'role', label: 'Role' },
-                  { id: 'isVerified', label: 'Verified', align: 'center' },
-                  { id: 'status', label: 'Status' },
+                  { id: 'active', label: 'Active', align: 'center' },
                   { id: '' },
                 ]}
               />
               <TableBody>
-                {dataFiltered
-                  .slice(
-                    table.page * table.rowsPerPage,
-                    table.page * table.rowsPerPage + table.rowsPerPage
-                  )
-                  .map((row) => (
-                    <UserTableRow
-                      key={row.id}
-                      row={row}
-                      selected={table.selected.includes(row.id)}
-                      onSelectRow={() => table.onSelectRow(row.id)}
-                    />
-                  ))}
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">
+                      <Typography variant="body2">Loading...</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">
+                      <Typography variant="body2" color="error">
+                        {error}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  dataFiltered
+                    .slice(
+                      table.page * table.rowsPerPage,
+                      table.page * table.rowsPerPage + table.rowsPerPage
+                    )
+                    .map((row) => (
+                      <UserTableRow
+                        key={row.id}
+                        row={row}
+                        selected={table.selected.includes(row.id)}
+                        onSelectRow={() => table.onSelectRow(row.id)}
+                      />
+                    ))
+                )}
 
                 <TableEmptyRows
                   height={68}
-                  emptyRows={emptyRows(table.page, table.rowsPerPage, _users.length)}
+                  emptyRows={emptyRows(table.page, table.rowsPerPage, users.length)}
                 />
 
                 {notFound && <TableNoData searchQuery={filterName} />}
@@ -117,16 +160,21 @@ export function UserView() {
         <TablePagination
           component="div"
           page={table.page}
-          count={_users.length}
+          count={users.length}
           rowsPerPage={table.rowsPerPage}
           onPageChange={table.onChangePage}
           rowsPerPageOptions={[5, 10, 25]}
           onRowsPerPageChange={table.onChangeRowsPerPage}
         />
       </Card>
+
+      <CreateUserModal open={isModalOpen} onClose={handleCloseModal} onCreate={handleCreateUser} />
     </DashboardContent>
   );
-}
+};
+
+export default React.memo(UserView);
+export { UserView };
 
 // ----------------------------------------------------------------------
 

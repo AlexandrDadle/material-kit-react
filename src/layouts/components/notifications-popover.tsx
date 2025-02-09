@@ -1,6 +1,6 @@
 import type { IconButtonProps } from '@mui/material/IconButton';
-
-import { useState, useCallback } from 'react';
+import { forwardRef, useState, useCallback } from 'react';
+import NotificationsIcon from '@material-design-icons/svg/outlined/notifications.svg';
 
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
@@ -70,9 +70,7 @@ export function NotificationsPopover({ data = [], sx, ...other }: NotificationsP
         sx={sx}
         {...other}
       >
-        <Badge badgeContent={totalUnRead} color="error">
-          <Iconify width={24} icon="solar:bell-bing-bold-duotone" />
-        </Badge>
+        <Box component="img" src={NotificationsIcon} sx={{ width: 24, height: 24 }} />
       </IconButton>
 
       <Popover

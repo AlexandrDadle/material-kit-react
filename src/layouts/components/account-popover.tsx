@@ -1,18 +1,11 @@
+import { useState, useCallback } from 'react';
+import { Box, Button, Avatar, Popover, Divider, MenuList, Typography, IconButton, MenuItem } from '@mui/material';
+import { useRouter, usePathname } from 'src/routes/hooks';
+import useAuth from 'src/hooks/useAuth';
+
 import type { IconButtonProps } from '@mui/material/IconButton';
 
-import { useState, useCallback } from 'react';
-
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Avatar from '@mui/material/Avatar';
-import Popover from '@mui/material/Popover';
-import Divider from '@mui/material/Divider';
-import MenuList from '@mui/material/MenuList';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
-
-import { useRouter, usePathname } from 'src/routes/hooks';
+import { menuItemClasses } from '@mui/material/MenuItem';
 
 import { _myAccount } from 'src/_mock';
 
@@ -29,6 +22,7 @@ export type AccountPopoverProps = IconButtonProps & {
 
 export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps) {
   const router = useRouter();
+  const { logout } = useAuth();
 
   const pathname = usePathname();
 
@@ -49,6 +43,11 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
     },
     [handleClosePopover, router]
   );
+
+  const handleLogout = useCallback(() => {
+    logout();
+    router.push('/sign-in');
+  }, [logout, router]);
 
   return (
     <>
@@ -129,7 +128,7 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
         <Divider sx={{ borderStyle: 'dashed' }} />
 
         <Box sx={{ p: 1 }}>
-          <Button fullWidth color="error" size="medium" variant="text">
+          <Button fullWidth color="error" size="medium" variant="text" onClick={handleLogout}>
             Logout
           </Button>
         </Box>
